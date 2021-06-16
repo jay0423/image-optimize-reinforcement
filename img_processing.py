@@ -21,8 +21,12 @@ from IPython.display import display
 
 class ImgProcessing:
 
-    def __init__(self):
-        pass
+    def __init__(self, img_list_adress):
+        img_list = []
+        for i, img in enumerate(img_list_adress):
+            img_list.append(cv2.imread(img))
+        self.img_list = img_list
+        self.img_processed_list = []
 
 
     def show_img(self, img, vmin=0, vmax=255, title=None):
@@ -42,11 +46,11 @@ class ImgProcessing:
     def show_img_compare(self, src, dst, vmin=0, vmax=255):
         # 元画像表示
         plt.subplot(121)
-        show_img(src, vmin, vmax, title='Before')
+        self.show_img(src, vmin, vmax, title='Before')
             
         # 返還後画像表示
         plt.subplot(122)
-        show_img(dst, vmin, vmax, title='After')
+        self.show_img(dst, vmin, vmax, title='After')
 
         
     #赤だけ残した画像を出力
@@ -89,18 +93,50 @@ class ImgProcessing:
         else:
             return only_r_img
 
-if __name__ == "__main__":
-    #ずらす値
-    alpha = 5
-    im_x0 = cv2.imread('sample_img/x0.png')
-    im_y0 = cv2.imread('sample_img/y0.png')
-    im_hakai = cv2.imread('sample_img/hakai0.png')
-    im_x0 = im_x0[:113, 400:]
-    im_y0 = im_y0[:113, 400-alpha:689-alpha]
-    im_hakai = im_hakai[:113, 400-alpha:689-alpha]
-    im = (im_x0 + im_y0 + im_hakai) - 100
 
-    a = ImgProcessing()
-    im_x0_red = a.get_red(im_x0, frame=True, filtering=False)
+    #複数画像のサイズを合わせる
+    def cleaning(self, img_list):
+        alpha = 5 #ずらす値
+        cleaned_img_list = []
+        for img in img_list:
+            cleaned_img_list.append(img[:113, 400:])
+        return cleaned_img_list
+
+    #各画像の赤い部分を抽出し合成する．
+    def processing(self, img_list):
+        img_processed_list = [] #画像処理が完了した画像リスト
+        for img in img_list:
+            img_processed_list.append(self.get_red(img)) #赤色を摘出し格納
+        return img_processed_list
+    
+
+    #複数画像を合成する．
+    def synthetic(self):
+        pass
+    
+
+    def main(self):
+        self.img_list = self.cleaning(self.img_list)
+        self.img_processed_list = self.processing(self.img_list)
+        print("画像を合成させました．")
+        self.show_img_compare(self.img_list[0], self.img_processed_list[0])
+
+
+if __name__ == "__main__":
+
+    a = ImgProcessing(["sample_img/x0.png"])
+    a.main()
+
+
+    # #ずらす値
+    # alpha = 5
+    # im_x0 = cv2.imread('sample_img/x0.png')
+    # im_y0 = cv2.imread('sample_img/y0.png')
+    # im_hakai = cv2.imread('sample_img/hakai0.png')
+    # im_x0 = im_x0[:113, 400:]
+    # im_y0 = im_y0[:113, 400-alpha:689-alpha]
+    # im_hakai = im_hakai[:113, 400-alpha:689-alpha]
+    # im = (im_x0 + im_y0 + im_hakai) - 100
+    #im_x0_red = a.get_red(im_x0, frame=True, filtering=False)
     # show_img_compare(im_x0, im_x0_red)
-    a.show_img(im_x0_red)
+    #a.show_img(im_x0_red)
