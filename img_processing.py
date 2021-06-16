@@ -21,25 +21,28 @@ from IPython.display import display
 
 class ImgProcessing:
 
-    def __init__(self, img_list_adress):
+    def __init__(self, img_address_list):
+        self.img_address_list = img_address_list
+
         img_list = []
-        for i, img in enumerate(img_list_adress):
+        for i, img in enumerate(img_address_list):
             img_list.append(cv2.imread(img))
         self.img_list = img_list
+        self.img_cleaned_list = []
         self.img_processed_list = []
 
 
-    def show_img(self, img, vmin=0, vmax=255, title=None):
-        if img.ndim == 3:
-            #カラー(ndim=次元数=3 -> RGBの３色)
-            rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) #CV2のRGB３色に変換
-            plt.imshow(rgb_img, vmin=vmin, vmax=vmax) #変換後画像をplotへ設定
-        elif img.ndim == 2:
-            #グレースケール（ndim=次元数=2 -> 白黒の２色）
-            plt.imshow(img, cmap='gray', vmin=vmin, vmax=vmax) #変換後画像をplotへ設定
-        plt.axis('off') #座標軸非表示
-        plt.title(title) #タイトル設定
-        # plt.show() #グラフ表示
+    # def show_img(self, img, vmin=0, vmax=255, title=None):
+    #     if img.ndim == 3:
+    #         #カラー(ndim=次元数=3 -> RGBの３色)
+    #         rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB) #CV2のRGB３色に変換
+    #         plt.imshow(rgb_img, vmin=vmin, vmax=vmax) #変換後画像をplotへ設定
+    #     elif img.ndim == 2:
+    #         #グレースケール（ndim=次元数=2 -> 白黒の２色）
+    #         plt.imshow(img, cmap='gray', vmin=vmin, vmax=vmax) #変換後画像をplotへ設定
+    #     plt.axis('off') #座標軸非表示
+    #     plt.title(title) #タイトル設定
+    #     # plt.show() #グラフ表示
 
         
     #画像表示（比較）
@@ -53,16 +56,37 @@ class ImgProcessing:
         self.show_img(dst, vmin, vmax, title='After')
 
 
+
     #複数画像を同時に表示する．
-    def show_img_before(self):
+    def show_img(self, target=""):
+        
+        #対象の画像リストを取得
+        if target == "before":
+            img_list = self.img_list
+        elif target == "cleaned":
+            img_list = self.img_cleaned_list
+        elif target == "after":
+            img_list = self.img_processed_list
+        elif target == "all":
+            img_list = self.img_list + self.img_cleaned_list + self.img_processed_list
+        else:
+            print("error: 対象画像群を指定してください．\ntarget = 'before', 'cleaned', 'after' or 'all'")
+            return
 
+        
+        # 画像のタイトル名を取得
+        title_list = self.img_address_list
+
+        N = len(img_list)
         col = 2
-        row = round(len(self.img_list) / col)
+        row = round(N / col)
 
-        fig = plt.figure()
-        for i, img in enumerate(self.img_list):
+        fig = plt.figure(target)
+        for i, img, title in zip(range(N), img_list, title_list):
             fig.add_subplot(row, col, i+1)
             plt.imshow(img)
+            plt.axis('off') #座標軸非表示
+            plt.title(title) #タイトル設定
         plt.show()
 
  
@@ -112,10 +136,8 @@ class ImgProcessing:
         alpha = 5 #ずらす値
         cleaned_img_list = []
         for img in img_list:
-            print("sdgfaefaf",img)
             # cleaned_img_list.append(img[:113, 400:])
             cleaned_img_list.append(img[:100, 380:])
-            
         return cleaned_img_list
 
 
@@ -133,8 +155,8 @@ class ImgProcessing:
     
 
     def main(self):
-        self.img_list = self.cleaning(self.img_list)
-        self.img_processed_list = self.processing(self.img_list)
+        self.img_cleaned_list = self.cleaning(self.img_list)
+        self.img_processed_list = self.processing(self.img_cleaned_list)
         print("画像を合成させました．")
 
 
@@ -142,7 +164,11 @@ if __name__ == "__main__":
 
     a = ImgProcessing(["sample_img/x0.png", "sample_img/y0.png", "sample_img/hakai0.png"])
     a.main()
-    a.show_img_before()
+    # a.show_img()
+    # a.show_img("before")
+    # a.show_img("cleaned")
+    # a.show_img("after")
+    a.show_img("all")
 
 
     # #ずらす値
