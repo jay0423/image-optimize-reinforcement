@@ -22,14 +22,16 @@ from IPython.display import display
 class ImgProcessing:
 
     def __init__(self, img_address_list):
-        self.img_address_list = img_address_list
+        self.img_address_list = img_address_list #初期画像のアドレス
 
+        #アドレスから画像を取得
         img_list = []
         for i, img in enumerate(img_address_list):
             img_list.append(cv2.imread(img))
-        self.img_list = img_list
-        self.img_cleaned_list = []
-        self.img_processed_list = []
+        self.img_list = img_list #初期画像リスト
+        
+        self.img_cleaned_list = [] #クリーンアップされた画像リスト
+        self.img_processed_list = [] #画像処理された画像リスト
 
 
     # def show_img(self, img, vmin=0, vmax=255, title=None):
@@ -72,10 +74,8 @@ class ImgProcessing:
         else:
             print("error: 対象画像群を指定してください．\ntarget = 'before', 'cleaned', 'after' or 'all'")
             return
-
         
-        # 画像のタイトル名を取得
-        title_list = self.img_address_list
+        title_list = self.img_address_list # 画像のタイトル名を取得
 
         N = len(img_list)
         col = 2
@@ -126,9 +126,9 @@ class ImgProcessing:
             
         #出力
         if green:
-            return only_r_img2
+            return cv2.cvtColor(only_r_img2, cv2.COLOR_BGR2RGB)
         else:
-            return only_r_img
+            return cv2.cvtColor(only_r_img, cv2.COLOR_BGR2RGB)
 
 
     #複数画像のサイズを合わせる
@@ -165,10 +165,10 @@ if __name__ == "__main__":
     a = ImgProcessing(["sample_img/x0.png", "sample_img/y0.png", "sample_img/hakai0.png"])
     a.main()
     # a.show_img()
-    # a.show_img("before")
-    # a.show_img("cleaned")
-    # a.show_img("after")
-    a.show_img("all")
+    a.show_img("before")
+    a.show_img("cleaned")
+    a.show_img("after")
+    # a.show_img("all")
 
 
     # #ずらす値
