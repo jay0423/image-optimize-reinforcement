@@ -39,7 +39,7 @@ class ImgProcessing:
             plt.imshow(img, cmap='gray', vmin=vmin, vmax=vmax) #変換後画像をplotへ設定
         plt.axis('off') #座標軸非表示
         plt.title(title) #タイトル設定
-        plt.show() #グラフ表示
+        # plt.show() #グラフ表示
 
         
     #画像表示（比較）
@@ -52,7 +52,20 @@ class ImgProcessing:
         plt.subplot(122)
         self.show_img(dst, vmin, vmax, title='After')
 
-        
+
+    #複数画像を同時に表示する．
+    def show_img_before(self):
+
+        col = 2
+        row = round(len(self.img_list) / col)
+
+        fig = plt.figure()
+        for i, img in enumerate(self.img_list):
+            fig.add_subplot(row, col, i+1)
+            plt.imshow(img)
+        plt.show()
+
+ 
     #赤だけ残した画像を出力
     def get_red(self, bgr_img, m_min=200, m_max=255, frame=True, green=True, filtering=True):
         #3色に分離（チャンネルを分ける）
@@ -99,8 +112,12 @@ class ImgProcessing:
         alpha = 5 #ずらす値
         cleaned_img_list = []
         for img in img_list:
-            cleaned_img_list.append(img[:113, 400:])
+            print("sdgfaefaf",img)
+            # cleaned_img_list.append(img[:113, 400:])
+            cleaned_img_list.append(img[:100, 380:])
+            
         return cleaned_img_list
+
 
     #各画像の赤い部分を抽出し合成する．
     def processing(self, img_list):
@@ -119,13 +136,13 @@ class ImgProcessing:
         self.img_list = self.cleaning(self.img_list)
         self.img_processed_list = self.processing(self.img_list)
         print("画像を合成させました．")
-        self.show_img_compare(self.img_list[0], self.img_processed_list[0])
 
 
 if __name__ == "__main__":
 
-    a = ImgProcessing(["sample_img/x0.png"])
+    a = ImgProcessing(["sample_img/x0.png", "sample_img/y0.png", "sample_img/hakai0.png"])
     a.main()
+    a.show_img_before()
 
 
     # #ずらす値
