@@ -45,24 +45,15 @@ class ImgProcessing:
 
 
     #赤だけ残した画像を出力
-    def get_red(self, bgr_img, m_min=200, m_max=255, frame=True, green=True, filtering=True):
+    def get_red(self, bgr_img, m_min=200, m_max=255, frame=True, filtering=True):
         #3色に分離（チャンネルを分ける）
         b, g, r = cv2.split(bgr_img)
         
         _, mask_b_img = cv2.threshold(b, 200, 255, cv2.THRESH_BINARY_INV) #blueをマスク（黒にする）
         _, mask_g_img = cv2.threshold(g, 200, 255, cv2.THRESH_BINARY_INV) #greenをマスク（黒にする）
         except_b_img = cv2.bitwise_and(bgr_img, bgr_img, mask=mask_b_img) #元画像と合成して青を除外（白の座標のみ元画像を復元）
-        except_g_img = cv2.bitwise_and(except_b_img, except_b_img, mask=mask_g_img) #さらに緑を除外
+        except_bg_img = cv2.bitwise_and(except_b_img, except_b_img, mask=mask_g_img) #さらに緑を除外
 
-        #redをマスク（白にする）
-        _, mask_r_img = cv2.threshold(r, m_min, m_max, cv2.THRESH_BINARY)
-
-        #元画像と合成してredのみにする（白の座標のみ元画像を復元）
-        only_r_img = cv2.bitwise_and(except_b_img, except_b_img, mask= mask_r_img)
-
-        #元画像と合成してredのみにする（2）
-        only_r_img2 = cv2.bitwise_and(except_g_img, except_g_img, mask= mask_r_img)
-        
         #　外枠の取得と合成
         if frame:
             # グレースケール化
@@ -70,19 +61,15 @@ class ImgProcessing:
             # 閾値135で二値化（白でマスク）
             ret, thresh = cv2.threshold(gry, 230, 255, 0)
             thresh = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
-            only_r_img = thresh + only_r_img
-            only_r_img2 = thresh + only_r_img2
+            except_bg_img = thresh + except_bg_img
         
         #境界線が粗いのでフィルタをかける(境界を曖昧にする)
         if filtering:
-            only_r_img = cv2.medianBlur(only_r_img, 5)
-            only_r_img2 = cv2.medianBlur(only_r_img2, 5)
+            except_bg_img = cv2.medianBlur(except_bg_img, 5)
             
         #出力
-        if green:
-            return cv2.cvtColor(only_r_img2, cv2.COLOR_BGR2RGB)
-        else:
-            return cv2.cvtColor(only_r_img, cv2.COLOR_BGR2RGB)
+        # return cv2.cvtColor(except_bg_img, cv2.COLOR_BGR2RGB)
+        return except_bg_img
 
 
     #各画像の赤い部分を抽出し合成する．
@@ -155,7 +142,7 @@ class ImgProcessing:
         fig = plt.figure(target)
         for i, img, title in zip(range(N), img_list, title_list):
             fig.add_subplot(row, col, i+1)
-            plt.imshow(img)
+            plt.imshow(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
             plt.axis('off') #座標軸非表示
             plt.title(title) #タイトル設定
         plt.show()
