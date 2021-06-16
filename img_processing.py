@@ -44,15 +44,28 @@ class ImgProcessing:
         return cleaned_img_list
 
 
-    #赤だけ残した画像を出力
-    def get_red(self, bgr_img, m_min=200, m_max=255, frame=True, filtering=True):
-        #3色に分離（チャンネルを分ける）
-        b, g, r = cv2.split(bgr_img)
+    # 赤だけ残した画像を出力
+    def get_mask_bgr(self, bgr_img, get_color="g", m_min=200, m_max=255, frame=True, filtering=True):
         
-        _, mask_b_img = cv2.threshold(b, 200, 255, cv2.THRESH_BINARY_INV) #blueをマスク（黒にする）
-        _, mask_g_img = cv2.threshold(g, 200, 255, cv2.THRESH_BINARY_INV) #greenをマスク（黒にする）
-        except_b_img = cv2.bitwise_and(bgr_img, bgr_img, mask=mask_b_img) #元画像と合成して青を除外（白の座標のみ元画像を復元）
-        except_bg_img = cv2.bitwise_and(except_b_img, except_b_img, mask=mask_g_img) #さらに緑を除外
+        # 3色に分離（チャンネルを分ける）
+        b, g, r = cv2.split(bgr_img)
+
+        # get_colorから必要なbgrを取得する．
+        color_list = ["b", "g", "r"]
+        for i, c in enumerate(color_list):
+            if c in sorted(get_color):
+                color_list[i] = ""
+        except_color_bgr_list = [b, g, r]
+        except_color_list = [e for e, c in zip(except_color_bgr_list, color_list) if c != ""]
+        # for e, c in zip(except_color_bgr_list, color_list):
+        #     if c != "":
+        #         except_color_list.append(e)
+
+        # 指定されたカラーをマスクする処理
+        except_img =bgr_img.copy()
+        for color in except_color_list:
+            _, mask_img = cv2.threshold(color, 200, 255, cv2.THRESH_BINARY_INV) # マスク（黒にする）
+            except_img = cv2.bitwise_and(except_img, except_img, mask=mask_img) # 除外
 
         #　外枠の取得と合成
         if frame:
@@ -61,15 +74,13 @@ class ImgProcessing:
             # 閾値135で二値化（白でマスク）
             ret, thresh = cv2.threshold(gry, 230, 255, 0)
             thresh = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
-            except_bg_img = thresh + except_bg_img
+            except_img = thresh + except_img
         
         #境界線が粗いのでフィルタをかける(境界を曖昧にする)
         if filtering:
-            except_bg_img = cv2.medianBlur(except_bg_img, 5)
+            except_img = cv2.medianBlur(except_img, 5)
             
-        #出力
-        # return cv2.cvtColor(except_bg_img, cv2.COLOR_BGR2RGB)
-        return except_bg_img
+        return except_img
 
 
     #各画像の赤い部分を抽出し合成する．
