@@ -25,13 +25,15 @@ class ImgProcessing:
         self.img_address_list = img_address_list #初期画像のアドレス
 
         #アドレスから画像を取得
-        img_list = []
+        img_original_list = []
         for i, img in enumerate(img_address_list):
-            img_list.append(cv2.imread(img))
-        self.img_list = img_list #初期画像リスト
+            img_original_list.append(cv2.imread(img))
+        self.img_original_list = img_original_list #初期画像リスト
 
         self.img_cleaned_list = [] #クリーンアップされた画像リスト
         self.img_processed_list = [] #画像処理された画像リスト
+
+        self.img_synthetic = None #合成写真
 
 
     #複数画像のサイズを合わせる
@@ -40,7 +42,7 @@ class ImgProcessing:
         cleaned_img_list = []
         for img in img_list:
             # cleaned_img_list.append(img[:113, 400:])
-            cleaned_img_list.append(img[:100, 380:])
+            cleaned_img_list.append(img[:100, 380:689])
         return cleaned_img_list
 
 
@@ -84,18 +86,27 @@ class ImgProcessing:
     def processing(self, img_list):
         img_processed_list = [] #画像処理が完了した画像リスト
         for img in img_list:
-            img_processed_list.append(self.get_mask_bgr(img, get_color="r", m_min=210, frame=False)) #赤色を摘出し格納
+            img_processed_list.append(self.get_mask_bgr(img, get_color="r", m_min=210, frame=True)) #赤色を摘出し格納
         return img_processed_list
     
 
     #複数画像を合成する．
-    def synthetic(self):
-        pass
+    def synthetic(self, img_list, gry=True):
+        img_list = img_list.copy() # メモリを分けるための処理
+        # グレースケール化
+        if gry:
+            for i, img in enumerate(img_list):
+                img_list[i] = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # img_synthetic = sum(img_list)# // len(img_list)
+        img_synthetic = img_list[0]//3 + img_list[0]//3 + img_list[2]//3
+        return img_synthetic
+        
     
 
     def main(self):
-        self.img_cleaned_list = self.cleaning(self.img_list)
+        self.img_cleaned_list = self.cleaning(self.img_original_list)
         self.img_processed_list = self.processing(self.img_cleaned_list)
+        self.img_synthetic = self.synthetic(self.img_processed_list, gry=True)
         print("画像を合成させました．")
 
 
@@ -104,13 +115,13 @@ class ImgProcessing:
         
         #対象の画像リストを取得
         if target == "before":
-            img_list = self.img_list
+            img_list = self.img_original_list
         elif target == "cleaned":
             img_list = self.img_cleaned_list
         elif target == "after":
             img_list = self.img_processed_list
         elif target == "all":
-            img_list = self.img_list + self.img_cleaned_list + self.img_processed_list
+            img_list = self.img_original_list + self.img_cleaned_list + self.img_processed_list
         else:
             print("error: 対象画像群を指定してください．\ntarget = 'before', 'cleaned', 'after' or 'all'")
             return
@@ -128,28 +139,23 @@ class ImgProcessing:
             plt.axis('off') #座標軸非表示
             plt.title(title) #タイトル設定
         plt.show()
+    
+
+    # 最終結果の表示
+    def result(self):
+        # 最終合成写真を表示する
+        fig = plt.figure("Synthetic Image")
+        plt.imshow(cv2.cvtColor(self.img_synthetic, cv2.COLOR_BGR2RGB))
+        plt.axis('off') #座標軸非表示
+        plt.show()
 
 
 if __name__ == "__main__":
 
     a = ImgProcessing(["sample_img/x0.png", "sample_img/y0.png", "sample_img/hakai0.png"])
     a.main()
-    # a.show_img()
-    a.show_img("before")
+    # a.show_img("before")
     a.show_img("cleaned")
     a.show_img("after")
     # a.show_img("all")
-
-
-    # #ずらす値
-    # alpha = 5
-    # im_x0 = cv2.imread('sample_img/x0.png')
-    # im_y0 = cv2.imread('sample_img/y0.png')
-    # im_hakai = cv2.imread('sample_img/hakai0.png')
-    # im_x0 = im_x0[:113, 400:]
-    # im_y0 = im_y0[:113, 400-alpha:689-alpha]
-    # im_hakai = im_hakai[:113, 400-alpha:689-alpha]
-    # im = (im_x0 + im_y0 + im_hakai) - 100
-    #im_x0_red = a.get_red(im_x0, frame=True, filtering=False)
-    # show_img_compare(im_x0, im_x0_red)
-    #a.show_img(im_x0_red)
+    a.result()
