@@ -29,9 +29,80 @@ class ImgProcessing:
         for i, img in enumerate(img_address_list):
             img_list.append(cv2.imread(img))
         self.img_list = img_list #初期画像リスト
-        
+
         self.img_cleaned_list = [] #クリーンアップされた画像リスト
         self.img_processed_list = [] #画像処理された画像リスト
+
+
+    #複数画像のサイズを合わせる
+    def cleaning(self, img_list):
+        alpha = 5 #ずらす値
+        cleaned_img_list = []
+        for img in img_list:
+            # cleaned_img_list.append(img[:113, 400:])
+            cleaned_img_list.append(img[:100, 380:])
+        return cleaned_img_list
+
+
+    #赤だけ残した画像を出力
+    def get_red(self, bgr_img, m_min=200, m_max=255, frame=True, green=True, filtering=True):
+        #3色に分離（チャンネルを分ける）
+        b, g, r = cv2.split(bgr_img)
+        
+        _, mask_b_img = cv2.threshold(b, 200, 255, cv2.THRESH_BINARY_INV) #blueをマスク（黒にする）
+        _, mask_g_img = cv2.threshold(g, 200, 255, cv2.THRESH_BINARY_INV) #greenをマスク（黒にする）
+        except_b_img = cv2.bitwise_and(bgr_img, bgr_img, mask=mask_b_img) #元画像と合成して青を除外（白の座標のみ元画像を復元）
+        except_g_img = cv2.bitwise_and(except_b_img, except_b_img, mask=mask_g_img) #さらに緑を除外
+
+        #redをマスク（白にする）
+        _, mask_r_img = cv2.threshold(r, m_min, m_max, cv2.THRESH_BINARY)
+
+        #元画像と合成してredのみにする（白の座標のみ元画像を復元）
+        only_r_img = cv2.bitwise_and(except_b_img, except_b_img, mask= mask_r_img)
+
+        #元画像と合成してredのみにする（2）
+        only_r_img2 = cv2.bitwise_and(except_g_img, except_g_img, mask= mask_r_img)
+        
+        #　外枠の取得と合成
+        if frame:
+            # グレースケール化
+            gry = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
+            # 閾値135で二値化（白でマスク）
+            ret, thresh = cv2.threshold(gry, 230, 255, 0)
+            thresh = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
+            only_r_img = thresh + only_r_img
+            only_r_img2 = thresh + only_r_img2
+        
+        #境界線が粗いのでフィルタをかける(境界を曖昧にする)
+        if filtering:
+            only_r_img = cv2.medianBlur(only_r_img, 5)
+            only_r_img2 = cv2.medianBlur(only_r_img2, 5)
+            
+        #出力
+        if green:
+            return cv2.cvtColor(only_r_img2, cv2.COLOR_BGR2RGB)
+        else:
+            return cv2.cvtColor(only_r_img, cv2.COLOR_BGR2RGB)
+
+
+    #各画像の赤い部分を抽出し合成する．
+    def processing(self, img_list):
+        img_processed_list = [] #画像処理が完了した画像リスト
+        for img in img_list:
+            img_processed_list.append(self.get_red(img)) #赤色を摘出し格納
+        return img_processed_list
+    
+
+    #複数画像を合成する．
+    def synthetic(self):
+        pass
+    
+
+    def main(self):
+        self.img_cleaned_list = self.cleaning(self.img_list)
+        self.img_processed_list = self.processing(self.img_cleaned_list)
+        print("画像を合成させました．")
+
 
 
     # def show_img(self, img, vmin=0, vmax=255, title=None):
@@ -88,76 +159,6 @@ class ImgProcessing:
             plt.axis('off') #座標軸非表示
             plt.title(title) #タイトル設定
         plt.show()
-
- 
-    #赤だけ残した画像を出力
-    def get_red(self, bgr_img, m_min=200, m_max=255, frame=True, green=True, filtering=True):
-        #3色に分離（チャンネルを分ける）
-        b, g, r = cv2.split(bgr_img)
-        
-        _, mask_b_img = cv2.threshold(b, 200, 255, cv2.THRESH_BINARY_INV) #blueをマスク（黒にする）
-        _, mask_g_img = cv2.threshold(g, 200, 255, cv2.THRESH_BINARY_INV) #greenをマスク（黒にする）
-        except_b_img = cv2.bitwise_and(bgr_img, bgr_img, mask=mask_b_img) #元画像と合成して青を除外（白の座標のみ元画像を復元）
-        except_g_img = cv2.bitwise_and(except_b_img, except_b_img, mask=mask_g_img) #さらに緑を除外
-
-        #redをマスク（白にする）
-        _, mask_r_img = cv2.threshold(r, m_min, m_max, cv2.THRESH_BINARY)
-
-        #元画像と合成してredのみにする（白の座標のみ元画像を復元）
-        only_r_img = cv2.bitwise_and(except_b_img, except_b_img, mask= mask_r_img)
-
-        #元画像と合成してredのみにする（2）
-        only_r_img2 = cv2.bitwise_and(except_g_img, except_g_img, mask= mask_r_img)
-        
-        #　外枠の取得と合成
-        if frame:
-            # グレースケール化
-            gry = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2GRAY)
-            # 閾値135で二値化（白でマスク）
-            ret, thresh = cv2.threshold(gry, 230, 255, 0)
-            thresh = cv2.cvtColor(thresh, cv2.COLOR_GRAY2BGR)
-            only_r_img = thresh + only_r_img
-            only_r_img2 = thresh + only_r_img2
-        
-        #境界線が粗いのでフィルタをかける(境界を曖昧にする)
-        if filtering:
-            only_r_img = cv2.medianBlur(only_r_img, 5)
-            only_r_img2 = cv2.medianBlur(only_r_img2, 5)
-            
-        #出力
-        if green:
-            return cv2.cvtColor(only_r_img2, cv2.COLOR_BGR2RGB)
-        else:
-            return cv2.cvtColor(only_r_img, cv2.COLOR_BGR2RGB)
-
-
-    #複数画像のサイズを合わせる
-    def cleaning(self, img_list):
-        alpha = 5 #ずらす値
-        cleaned_img_list = []
-        for img in img_list:
-            # cleaned_img_list.append(img[:113, 400:])
-            cleaned_img_list.append(img[:100, 380:])
-        return cleaned_img_list
-
-
-    #各画像の赤い部分を抽出し合成する．
-    def processing(self, img_list):
-        img_processed_list = [] #画像処理が完了した画像リスト
-        for img in img_list:
-            img_processed_list.append(self.get_red(img)) #赤色を摘出し格納
-        return img_processed_list
-    
-
-    #複数画像を合成する．
-    def synthetic(self):
-        pass
-    
-
-    def main(self):
-        self.img_cleaned_list = self.cleaning(self.img_list)
-        self.img_processed_list = self.processing(self.img_cleaned_list)
-        print("画像を合成させました．")
 
 
 if __name__ == "__main__":
