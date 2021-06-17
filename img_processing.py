@@ -83,30 +83,45 @@ class ImgProcessing:
 
 
     #各画像の赤い部分を抽出し合成する．
-    def processing(self, img_list):
+    def processing(self, img_list, get_color="r", m_min=200, m_max=255, frame=True, filtering=True):
         img_processed_list = [] #画像処理が完了した画像リスト
         for img in img_list:
-            img_processed_list.append(self.get_mask_bgr(img, get_color="r", m_min=210, frame=True)) #赤色を摘出し格納
+            img_processed_list.append(self.get_mask_bgr(img, get_color, m_min, m_max, frame, filtering)) #赤色を摘出し格納
         return img_processed_list
     
 
     #複数画像を合成する．
-    def synthetic(self, img_list, gry=True):
+    def synthetic(self, img_list, gry=True, inv=False, how="sum"):
         img_list = img_list.copy() # メモリを分けるための処理
         # グレースケール化
         if gry:
             for i, img in enumerate(img_list):
                 img_list[i] = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        # img_synthetic = sum(img_list)# // len(img_list)
-        img_synthetic = img_list[0]//3 + img_list[0]//3 + img_list[2]//3
+
+        if how == "sum":
+            img_synthetic = sum(img_list)
+        elif how == "average":
+            img_synthetic = img_list[0]//3 + img_list[1]//3 + img_list[2]//3
+        elif how == "max":
+            img_synthetic = img_list[0]
+            for i in range(len(img_list)-1):
+                print(i)
+                img_synthetic = np.maximum(img_synthetic,img_list[i+1])
+        elif how == "min":
+            img_synthetic = img_list[0]
+            for i in range(len(img_list)-1):
+                img_synthetic = np.minimum(img_synthetic,img_list[i+1])
+
+        if inv:
+            img_synthetic = cv2.bitwise_not(img_synthetic)
         return img_synthetic
         
     
 
     def main(self):
         self.img_cleaned_list = self.cleaning(self.img_original_list)
-        self.img_processed_list = self.processing(self.img_cleaned_list)
-        self.img_synthetic = self.synthetic(self.img_processed_list, gry=True)
+        self.img_processed_list = self.processing(self.img_cleaned_list, get_color="r", m_min=200, m_max=255, frame=True, filtering=True)
+        self.img_synthetic = self.synthetic(self.img_processed_list, gry=False, inv=False, how="max")
         print("画像を合成させました．")
 
 
@@ -155,7 +170,7 @@ if __name__ == "__main__":
     a = ImgProcessing(["sample_img/x0.png", "sample_img/y0.png", "sample_img/hakai0.png"])
     a.main()
     # a.show_img("before")
-    a.show_img("cleaned")
+    # a.show_img("cleaned")
     a.show_img("after")
     # a.show_img("all")
     a.result()
