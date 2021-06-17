@@ -13,6 +13,7 @@ from skimage import measure, color, morphology
 
 import cv2
 import numpy as np
+import math
 
 from ipywidgets import interact, interactive, fixed, RadioButtons
 import ipywidgets as widgets
@@ -88,6 +89,60 @@ class ImgProcessing:
         for img in img_list:
             img_processed_list.append(self.get_mask_bgr(img, get_color, m_min, m_max, frame, filtering)) #赤色を摘出し格納
         return img_processed_list
+
+    
+    def img_synthetic_how_j(self, img_list):
+        # 新たな画像処理アルゴリズム
+        img_synthetic= img_list[0].copy()
+        for i in range(len(img_list)-1):
+            img_i = img_list[i+1]
+            for j in range(len(img_synthetic)):
+                for k in range(len(img_synthetic[i])):
+                    bgr_synsthetic = img_synthetic[j][k]
+                    bgr_i = img_i[j][k]
+                    zeros_synthetic = np.count_nonzero(bgr_synsthetic < 10) # 10より小さい値の数を取得0~3
+                    zeros_i = np.count_nonzero(bgr_i < 10)
+                    # ０の数に応じてrgb決定する
+                    if zeros_synthetic == 0:
+                        if zeros_i == 0:
+                            get_bgr = np.maximum(bgr_synsthetic, bgr_i)
+                        elif zeros_i == 1:
+                            get_bgr = bgr_i
+                        elif zeros_i == 2:
+                            get_bgr = bgr_i
+                        elif zeros_i == 3:
+                            get_bgr = bgr_synsthetic
+                    elif zeros_synthetic == 1:
+                        if zeros_i == 0:
+                            get_bgr = bgr_synsthetic
+                        elif zeros_i == 1:
+                            get_bgr = np.minimum(bgr_synsthetic, bgr_i)
+                        elif zeros_i == 2:
+                            get_bgr = bgr_i
+                        elif zeros_i == 3:
+                            get_bgr = bgr_synsthetic
+                    elif zeros_synthetic == 2:
+                        if zeros_i == 0:
+                            get_bgr = bgr_synsthetic
+                        elif zeros_i == 1:
+                            get_bgr = bgr_synsthetic
+                        elif zeros_i == 2:
+                            get_bgr = np.maximum(bgr_synsthetic, bgr_i)
+                        elif zeros_i == 3:
+                            get_bgr = bgr_synsthetic
+                    elif zeros_synthetic == 3:
+                        if zeros_i == 0:
+                            get_bgr = bgr_i
+                        elif zeros_i == 1:
+                            get_bgr = bgr_i
+                        elif zeros_i == 2:
+                            get_bgr = bgr_i
+                        elif zeros_i == 3:
+                            get_bgr = [0, 0, 0]
+
+                    img_synthetic[j][k] = get_bgr # 変更
+        return img_synthetic
+
     
 
     #複数画像を合成する．
@@ -98,19 +153,22 @@ class ImgProcessing:
             for i, img in enumerate(img_list):
                 img_list[i] = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
+        # 編集処理の選択
         if how == "sum":
             img_synthetic = sum(img_list)
         elif how == "average":
             img_synthetic = img_list[0]//3 + img_list[1]//3 + img_list[2]//3
         elif how == "max":
             img_synthetic = img_list[0]
+            # print(img_list[1][50])
             for i in range(len(img_list)-1):
-                print(i)
                 img_synthetic = np.maximum(img_synthetic,img_list[i+1])
         elif how == "min":
             img_synthetic = img_list[0]
             for i in range(len(img_list)-1):
                 img_synthetic = np.minimum(img_synthetic,img_list[i+1])
+        elif how == "j":
+            img_synthetic = self.img_synthetic_how_j(img_list)
 
         if inv:
             img_synthetic = cv2.bitwise_not(img_synthetic)
@@ -120,8 +178,8 @@ class ImgProcessing:
 
     def main(self):
         self.img_cleaned_list = self.cleaning(self.img_original_list)
-        self.img_processed_list = self.processing(self.img_cleaned_list, get_color="r", m_min=200, m_max=255, frame=True, filtering=True)
-        self.img_synthetic = self.synthetic(self.img_processed_list, gry=False, inv=False, how="max")
+        self.img_processed_list = self.processing(self.img_cleaned_list, get_color="r", m_min=200, m_max=255, frame=True, filtering=False)
+        self.img_synthetic = self.synthetic(self.img_processed_list, gry=False, inv=False, how="j")
         print("画像を合成させました．")
 
 
@@ -145,7 +203,7 @@ class ImgProcessing:
 
         N = len(img_list)
         col = 2
-        row = round(N / col)
+        row = math.ceil(N / col)
 
         fig = plt.figure(target)
         for i, img, title in zip(range(N), img_list, title_list):
@@ -167,7 +225,8 @@ class ImgProcessing:
 
 if __name__ == "__main__":
 
-    a = ImgProcessing(["sample_img/x0.png", "sample_img/y0.png", "sample_img/hakai0.png"])
+    a = ImgProcessing(["sample_img/x0.png", "sample_img/y0.png", "sample_img/hakai0.png", "sample_img/y90.png", "sample_img/hakai90.png"])
+    # a = ImgProcessing(["sample_img/x0.png", "sample_img/y0.png"])
     a.main()
     # a.show_img("before")
     # a.show_img("cleaned")
